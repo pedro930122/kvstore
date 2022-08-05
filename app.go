@@ -1,15 +1,21 @@
 package main
 
 import (
+	"github.com/dgraph-io/badger/v3"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type KVStoreApplication struct{}
+type KVStoreApplication struct {
+	db           *badger.DB
+	currentBatch *badger.Txn
+}
 
 var _ abcitypes.Application = (*KVStoreApplication)(nil)
 
-func NewKVStoreApplication() *KVStoreApplication {
-	return &KVStoreApplication{}
+func NewKVStoreApplication(db *badger.DB) *KVStoreApplication {
+	return &KVStoreApplication{
+		db: db,
+	}
 }
 
 func (KVStoreApplication) Info(req abcitypes.RequestInfo) abcitypes.ResponseInfo {
