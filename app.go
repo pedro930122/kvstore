@@ -23,7 +23,19 @@ func (KVStoreApplication) Info(req abcitypes.RequestInfo) abcitypes.ResponseInfo
 	return abcitypes.ResponseInfo{}
 }
 
-func (KVStoreApplication) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseDeliverTx {
+func (app *KVStoreApplication) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseDeliverTx {
+	code := app.isValid(req.Tx)
+	if code != 0 {
+		return abcitypes.ResponseDeliverTx{Code: code}
+	}
+
+	parts := bytes.Split(req.Tx, []byte("="))
+	key, value := parts[0], parts[1]
+	err := app.currentBatch.Set(key, value)
+
+	if err != nill {
+
+	}
 	return abcitypes.ResponseDeliverTx{Code: 0}
 }
 
@@ -62,8 +74,9 @@ func (app *KVStoreApplication) CheckTx(req abcitypes.RequestCheckTx) abcitypes.R
 	return abcitypes.ResponseCheckTx{Code: code, GasWanted: 1}
 }
 
-func (KVStoreApplication) Commit() abcitypes.ResponseCommit {
-	return abcitypes.ResponseCommit{}
+func (app *KVStoreApplication) Commit() abcitypes.ResponseCommit {
+	app.currentBatch.Commit()
+	return abcitypes.ResponseCommit{Data: []byte{}}
 }
 
 func (KVStoreApplication) Query(req abcitypes.RequestQuery) abcitypes.ResponseQuery {
@@ -74,7 +87,8 @@ func (KVStoreApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.Re
 	return abcitypes.ResponseInitChain{}
 }
 
-func (KVStoreApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
+func (app *KVStoreApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
+	app.currentBatch = app.db.NewTransaction(true)
 	return abcitypes.ResponseBeginBlock{}
 }
 
