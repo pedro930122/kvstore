@@ -33,7 +33,7 @@ func (app *KVStoreApplication) DeliverTx(req abcitypes.RequestDeliverTx) abcityp
 	key, value := parts[0], parts[1]
 	err := app.currentBatch.Set(key, value)
 
-	if err != nill {
+	if err != nil {
 
 	}
 	return abcitypes.ResponseDeliverTx{Code: 0}
@@ -79,8 +79,26 @@ func (app *KVStoreApplication) Commit() abcitypes.ResponseCommit {
 	return abcitypes.ResponseCommit{Data: []byte{}}
 }
 
-func (KVStoreApplication) Query(req abcitypes.RequestQuery) abcitypes.ResponseQuery {
-	return abcitypes.ResponseQuery{Code: 0}
+func (app *KVStoreApplication) Query(req abcitypes.RequestQuery) (resQuery abcitypes.ResponseQuery) {
+	resQuery.Key := reqQuery.Data
+	err := app.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(reqQuery.Data)
+		if err != nil && err == badger.ErrKeyNotFound {
+			resQuery.Log = "does not exist"
+		} else {
+			return item.Value(func(val byte[]) {
+				resQuery.Log = "exists"
+				resQuery.Value = val
+				return nil
+			})
+		}
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+	return
 }
 
 func (KVStoreApplication) InitChain(req abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
